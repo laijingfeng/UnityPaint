@@ -1,9 +1,17 @@
-﻿using UnityEngine;
+﻿using System.Collections;
+using System.IO;
+using UnityEngine;
 using UnityEngine.UI;
 
 public class PaintViewTest : MonoBehaviour
 {
     #region 属性
+
+    /// <summary>
+    /// 使用的图
+    /// </summary>
+    [SerializeField]
+    private RawImage _useImage;
 
     [SerializeField]
     private RectTransform _uiCanvas;
@@ -113,6 +121,8 @@ public class PaintViewTest : MonoBehaviour
         {
             _paintBrushMat.SetColor("_Color", clearColor);
         }
+
+        _useImage.transform.Rotate(new Vector3(0, 0, 10), Space.Self);
     }
 
     #region 外部接口
@@ -123,8 +133,8 @@ public class PaintViewTest : MonoBehaviour
     /// <param name="size">1-100</param>
     public void SetBrushSize(float size)
     {
-        _brushSize = Remap(size, 300.0f, 30.0f);
-        _brushLerpSize = (_defaultBrushTex.width + _defaultBrushTex.height) / 2.0f / 300;//_brushSize;
+        _brushSize = Remap(size, 150.0f, 15.0f);
+        _brushLerpSize = (_defaultBrushTex.width + _defaultBrushTex.height) / 2.0f / _brushSize;
         _paintBrushMat.SetFloat("_Size", _brushSize);
     }
 
@@ -286,6 +296,92 @@ public class PaintViewTest : MonoBehaviour
         float returnValue = (value - 1.0f) / (100.0f - 1.0f);
         returnValue = (enValue - startValue) * returnValue + startValue;
         return returnValue;
+    }
+
+    [ContextMenu("SavePng")]
+    private Texture2D SaveToPng()
+    {
+        string filename = "test.png";
+
+        Texture2D tex2d = new Texture2D(_paintCanvasWidth, _paintCanvasWidth, TextureFormat.ARGB32, false);
+        RenderTexture.active = _renderTex;
+        tex2d.ReadPixels(new Rect(0, 0, _paintCanvasWidth, _paintCanvasWidth), 0, 0);
+        tex2d.Apply();
+
+        string filepath = Path.Combine(GetPersistentDataPath(), filename);
+        byte[] pngShot = tex2d.EncodeToPNG();
+        File.WriteAllBytes(filepath, pngShot);
+        pngShot = null;
+
+        return tex2d;
+    }
+
+    /// <summary>
+    /// PersistentDataPath
+    /// </summary>
+    /// <returns></returns>
+    static public string GetPersistentDataPath()
+    {
+        string filepath = Application.persistentDataPath;
+        if (!Directory.Exists(filepath))
+        {
+            Directory.CreateDirectory(filepath);
+        }
+        return filepath;
+    }
+
+    [ContextMenu("LoadPng")]
+    private void LoadPng()
+    {
+        string name = "test.png";
+        this.StartCoroutine(DownloadEnumerator(name, _useImage));
+    }
+
+    private IEnumerator DownloadEnumerator(string name, RawImage image)
+    {
+        string path = Path.Combine(GetPersistentDataPath(), name);
+        WWW www = new WWW(path);
+
+        yield return www;
+
+        if (www != null && string.IsNullOrEmpty(www.error))
+        {
+            Debug.LogError("X");
+            image.texture = www.texture;
+        }
+        else
+        {
+            Debug.LogError("D " + www.error);
+        }
+    }
+
+    private void LoadByIO()
+    {
+        string path = Path.Combine(GetPersistentDataPath(), "test.png");
+        
+        FileStream fileStream = new FileStream(path, FileMode.Open, FileAccess.Read);
+        fileStream.Seek(0, SeekOrigin.Begin);
+        byte[] bytes = new byte[fileStream.Length];
+        fileStream.Read(bytes, 0, (int)fileStream.Length);
+        fileStream.Close();
+        fileStream.Dispose();
+        fileStream = null;
+        
+        int width = _paintCanvasWidth;
+        int height = _paintCanvasHeight;
+        Texture2D texture2D = new Texture2D(width, height);
+        texture2D.LoadImage(bytes);
+
+        _useImage.texture = texture2D;
+    }
+
+    private void OnGUI()
+    {
+        if (GUILayout.Button("LoadPng"))
+        {
+            //LoadPng();
+            LoadByIO();
+        }
     }
 
     #endregion
