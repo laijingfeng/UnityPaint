@@ -7,10 +7,7 @@
 // <time> 2017-12-10 </time>
 //-----------------------------------------------------------------------
 
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 
@@ -18,65 +15,119 @@ public class PaintView : MonoBehaviour
 {
     #region 属性
 
-    //绘图shader&material
+    /// <summary>
+    /// 笔刷shader
+    /// </summary>
     [SerializeField]
     private Shader _paintBrushShader;
+    /// <summary>
+    /// 笔刷material
+    /// </summary>
     private Material _paintBrushMat;
-    //清理renderTexture的shader&material
+
+    /// <summary>
+    /// 橡皮的shader
+    /// </summary>
     [SerializeField]
     private Shader _clearBrushShader;
+
+    /// <summary>
+    /// 橡皮的material
+    /// </summary>
     private Material _clearBrushMat;
-    //默认笔刷RawImage
+
+    /// <summary>
+    /// 当前选中的笔刷贴图
+    /// </summary>
     [SerializeField]
     private RawImage _defaultBrushRawImage;
-    //默认笔刷&笔刷合集
+
+    /// <summary>
+    /// 默认的笔刷贴图
+    /// </summary>
     [SerializeField]
     private Texture _defaultBrushTex;
-    //renderTexture
+
+    /// <summary>
+    /// 画布
+    /// </summary>
     private RenderTexture _renderTex;
-    //默认笔刷RawImage
+
+    /// <summary>
+    /// 当前选中的笔刷颜色
+    /// </summary>
     [SerializeField]
     private Image _defaultColorImage;
-    //绘画的画布
+
+    /// <summary>
+    /// 绘画的画布
+    /// </summary>
     [SerializeField]
     private RawImage _paintCanvas;
-    //笔刷的默认颜色&颜色合集
+
+    /// <summary>
+    /// 默认的笔刷颜色
+    /// </summary>
     [SerializeField]
     private Color _defaultColor;
-    //笔刷大小的slider
+
+    /// <summary>
+    /// 笔刷大小的slider
+    /// </summary>
     private Text _brushSizeText;
-    //笔刷的大小
+    /// <summary>
+    /// 笔刷的大小
+    /// </summary>
     private float _brushSize;
-    //屏幕的宽高
+    /// <summary>
+    /// 屏幕的宽高
+    /// </summary>
     private int _screenWidth;
+    /// <summary>
+    /// 屏幕的宽高
+    /// </summary>
     private int _screenHeight;
-    //笔刷的间隔大小
+    /// <summary>
+    /// 笔刷的间隔大小
+    /// </summary>
     private float _brushLerpSize;
-    //默认上一次点的位置
+    /// <summary>
+    /// 默认上一次点的位置
+    /// </summary>
     private Vector2 _lastPoint;
-	#endregion
 
-	void Start()
-	{
-		InitData();
-	}
+    #endregion 属性
 
-	private void Update()
-	{
-		Color clearColor = new Color(0, 0, 0, 0);
-		if (Input.GetKeyDown(KeyCode.Space))
-			_paintBrushMat.SetColor("_Color", clearColor);
-	}
-
-
-	#region 外部接口
-
-	public void SetBrushSize(float size)
+    void Start()
     {
-       _brushSize = size;
-       _paintBrushMat.SetFloat("_Size", _brushSize);
+        InitData();
     }
 
+    private void Update()
+    {
+        Color clearColor = new Color(0, 0, 0, 0);
+        if (Input.GetKeyDown(KeyCode.Space))
+        {
+            _paintBrushMat.SetColor("_Color", clearColor);
+        }
+    }
+
+    #region 外部接口
+
+    /// <summary>
+    /// 设置笔刷大小
+    /// </summary>
+    /// <param name="size"></param>
+    public void SetBrushSize(float size)
+    {
+        _brushSize = size;
+        _paintBrushMat.SetFloat("_Size", _brushSize);
+    }
+
+    /// <summary>
+    /// 设置笔刷贴图
+    /// </summary>
+    /// <param name="texture"></param>
     public void SetBrushTexture(Texture texture)
     {
         _defaultBrushTex = texture;
@@ -84,12 +135,17 @@ public class PaintView : MonoBehaviour
         _defaultBrushRawImage.texture = _defaultBrushTex;
     }
 
+    /// <summary>
+    /// 设置笔刷颜色
+    /// </summary>
+    /// <param name="color"></param>
     public void SetBrushColor(Color color)
     {
         _defaultColor = color;
         _paintBrushMat.SetColor("_Color", _defaultColor);
         _defaultColorImage.color = _defaultColor;
     }
+
     /// <summary>
     /// 选择颜色
     /// </summary>
@@ -98,6 +154,7 @@ public class PaintView : MonoBehaviour
     {
         SetBrushColor(image.color);
     }
+
     /// <summary>
     /// 选择笔刷
     /// </summary>
@@ -106,17 +163,18 @@ public class PaintView : MonoBehaviour
     {
         SetBrushTexture(rawImage.texture);
     }
+
     /// <summary>
-    /// 设置笔刷大小
+    /// 笔刷大小改变
     /// </summary>
     /// <param name="value"></param>
     public void BrushSizeChanged(Slider slider)
     {
-      //  float value = slider.maxValue + slider.minValue - slider.value;
-        SetBrushSize(Remap(slider.value,300.0f,30.0f));
+        //float value = slider.maxValue + slider.minValue - slider.value;
+        SetBrushSize(Remap(slider.value, 300.0f, 30.0f));
         if (_brushSizeText == null)
         {
-            _brushSizeText=slider.transform.Find("Background/Text").GetComponent<Text>();
+            _brushSizeText = slider.transform.Find("Background/Text").GetComponent<Text>();
         }
         _brushSizeText.text = slider.value.ToString("f2");
     }
@@ -128,27 +186,31 @@ public class PaintView : MonoBehaviour
     {
         if (_renderTex && _paintBrushMat)
         {
-
             if (Input.GetMouseButton(0))
+            {
                 LerpPaint(Input.mousePosition);
-
-           
+            }
         }
     }
+
     /// <summary>
     /// 拖拽结束
     /// </summary>
     public void DragEnd()
     {
         if (Input.GetMouseButtonUp(0))
+        {
             _lastPoint = Vector2.zero;
+        }
     }
 
     #endregion
 
     #region 内部函数
-	
-    //初始化数据
+
+    /// <summary>
+    /// 初始化数据
+    /// </summary>
     void InitData()
     {
         _brushSize = 300.0f;
@@ -159,8 +221,10 @@ public class PaintView : MonoBehaviour
         {
             UpdateBrushMaterial();
         }
-        if(_clearBrushMat==null)
-        _clearBrushMat = new Material(_clearBrushShader);
+        if (_clearBrushMat == null)
+        {
+            _clearBrushMat = new Material(_clearBrushShader);
+        }
         if (_renderTex == null)
         {
             _screenWidth = Screen.width;
@@ -172,7 +236,9 @@ public class PaintView : MonoBehaviour
         Graphics.Blit(null, _renderTex, _clearBrushMat);
     }
 
-    //更新笔刷材质
+    /// <summary>
+    /// 更新笔刷材质
+    /// </summary>
     private void UpdateBrushMaterial()
     {
         _paintBrushMat = new Material(_paintBrushShader);
@@ -181,7 +247,10 @@ public class PaintView : MonoBehaviour
         _paintBrushMat.SetFloat("_Size", _brushSize);
     }
 
-    //插点
+    /// <summary>
+    /// 插点
+    /// </summary>
+    /// <param name="point"></param>
     private void LerpPaint(Vector2 point)
     {
         Paint(point);
@@ -206,19 +275,23 @@ public class PaintView : MonoBehaviour
         _lastPoint = point;
     }
 
-    //画点
+    /// <summary>
+    /// 画点
+    /// </summary>
+    /// <param name="point"></param>
     private void Paint(Vector2 point)
     {
         if (point.x < 0 || point.x > _screenWidth || point.y < 0 || point.y > _screenHeight)
+        {
             return;
-
-        Vector2 uv = new Vector2(point.x / (float)_screenWidth,
-            point.y / (float)_screenHeight);
+        }
+        Vector2 uv = new Vector2(point.x / (float)_screenWidth, point.y / (float)_screenHeight);
         _paintBrushMat.SetVector("_UV", uv);
         Graphics.Blit(_renderTex, _renderTex, _paintBrushMat);
     }
+
     /// <summary>
-    /// 重映射  默认  value 为1-100
+    /// 重映射，默认value为1-100
     /// </summary>
     /// <param name="value"></param>
     /// <param name="maxValue"></param>
@@ -232,5 +305,4 @@ public class PaintView : MonoBehaviour
     }
 
     #endregion
-
 }
