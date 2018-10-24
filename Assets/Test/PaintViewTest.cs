@@ -375,14 +375,18 @@ public class PaintViewTest : MonoBehaviour
         _useImage.texture = texture2D;
     }
 
+    #endregion
+
     private void OnGUI()
     {
-        if (GUILayout.Button("LoadPng"))
+        if (GUILayout.Button("SavePng"))
+        {
+            SaveToPng();
+        }
+        else if (GUILayout.Button("LoadPng"))
         {
             //LoadPng();
             LoadByIO();
         }
     }
-
-    #endregion
 }
